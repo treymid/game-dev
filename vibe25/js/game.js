@@ -73,12 +73,10 @@ const enemies = [
         width: 30,
         height: 30,
         speed: 2,
-        direction: 1,
-        platformIndex: 0,
+        direction: 1, // 1 for right, -1 for left
+        platformIndex: 0, // Index of the platform this enemy patrols
         patrolStart: 400,
-        patrolEnd: 700,
-        maxHealth: 100,
-        health: 100
+        patrolEnd: 700
     },
     {
         x: 1300,
@@ -87,11 +85,9 @@ const enemies = [
         height: 30,
         speed: 3,
         direction: 1,
-        platformIndex: 12,
+        platformIndex: 12, // Platform index this enemy patrols
         patrolStart: 1300,
-        patrolEnd: 1550,
-        maxHealth: 100,
-        health: 100
+        patrolEnd: 1550
     },
     {
         x: 2200,
@@ -102,9 +98,7 @@ const enemies = [
         direction: 1,
         platformIndex: 14,
         patrolStart: 2200,
-        patrolEnd: 2500,
-        maxHealth: 100,
-        health: 100
+        patrolEnd: 2500
     }
 ];
 
@@ -197,7 +191,7 @@ function shoot() {
         velocityX: Math.cos(angle) * bulletSpeed,
         velocityY: Math.sin(angle) * bulletSpeed,
         size: 5,
-        damage: 50,  // Increased damage to 50
+        damage: 10,
         lifetime: 60 // frames
     });
 
@@ -308,19 +302,11 @@ function update() {
         // Check enemy collisions
         enemies.forEach(enemy => {
             if (checkCollision(bullet, enemy)) {
-                // Apply damage instead of immediately removing enemy
-                enemy.health -= bullet.damage;
+                // Remove enemy and bullet
+                enemies.splice(enemies.indexOf(enemy), 1);
                 bullets.splice(i, 1);
-                
-                // Create hit effect
-                createBloodEffect(bullet.x, bullet.y);
-                
-                // Remove enemy if health depleted
-                if (enemy.health <= 0) {
-                    enemies.splice(enemies.indexOf(enemy), 1);
-                    // Create death effect
-                    createBloodEffect(enemy.x + enemy.width/2, enemy.y + enemy.height/2);
-                }
+                // Add particle effect for hit
+                createBloodEffect(enemy.x + enemy.width/2, enemy.y + enemy.height/2);
             }
         });
 
@@ -362,8 +348,6 @@ function update() {
             muzzleFlashes.splice(i, 1);
         }
     }
-
-    updateParticles();
 }
 
 // Add player reset function
@@ -407,38 +391,18 @@ function draw() {
         // Draw enemy body
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
         
-        // Draw enemy eyes
+        // Draw enemy eyes (makes them look more menacing)
         ctx.fillStyle = '#000000';
         if (enemy.direction === 1) {
+            // Eyes pointing right
             ctx.fillRect(enemy.x + enemy.width - 10, enemy.y + 5, 5, 5);
             ctx.fillRect(enemy.x + enemy.width - 10, enemy.y + 20, 5, 5);
         } else {
+            // Eyes pointing left
             ctx.fillRect(enemy.x + 5, enemy.y + 5, 5, 5);
             ctx.fillRect(enemy.x + 5, enemy.y + 20, 5, 5);
         }
-
-        // Draw health bar background
-        ctx.fillStyle = '#FF0000';
-        ctx.fillRect(enemy.x - 5, enemy.y - 10, enemy.width + 10, 5);
-        
-        // Draw current health
         ctx.fillStyle = '#00FF00';
-        const healthWidth = ((enemy.width + 10) * enemy.health) / enemy.maxHealth;
-        ctx.fillRect(enemy.x - 5, enemy.y - 10, healthWidth, 5);
-
-        // Draw health bar border
-        ctx.strokeStyle = '#000000';
-        ctx.strokeRect(enemy.x - 5, enemy.y - 10, enemy.width + 10, 5);
-
-        // Draw health percentage
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(
-            `${Math.round(enemy.health)}%`, 
-            enemy.x + enemy.width/2, 
-            enemy.y - 15
-        );
     });
 
     // Draw player
@@ -528,16 +492,6 @@ function draw() {
         ctx.fillText(`Ammo: ${currentAmmo}/${maxBullets}`, 20, 30);
         ctx.restore();
     }
-
-    // Draw particles
-    particles.forEach(particle => {
-        ctx.globalAlpha = particle.alpha;
-        ctx.fillStyle = particle.color;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.globalAlpha = 1;
 }
 
 // Game loop
@@ -552,34 +506,17 @@ gameLoop();
 
 // Helper function to create blood effect
 function createBloodEffect(x, y) {
-    for (let i = 0; i < 15; i++) {  // Increased particle count
+    for (let i = 0; i < 10; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 6 + 3;  // Increased speed range
+        const speed = Math.random() * 5 + 2;
         particles.push({
             x: x,
             y: y,
             velocityX: Math.cos(angle) * speed,
             velocityY: Math.sin(angle) * speed,
-            size: Math.random() * 6 + 3,  // Larger particles
-            color: `rgb(${128 + Math.random() * 127}, 0, 0)`,  // Random dark red
-            lifetime: 80,  // Longer lifetime
-            alpha: 1
+            size: Math.random() * 5 + 2,
+            color: '#8B0000',
+            lifetime: 60
         });
-    }
-}
-
-// Add particle update logic if not already present
-function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const particle = particles[i];
-        particle.x += particle.velocityX;
-        particle.y += particle.velocityY;
-        particle.velocityY += 0.1;  // Gravity
-        particle.lifetime--;
-        particle.alpha = particle.lifetime / 80;  // Fade out
-
-        if (particle.lifetime <= 0) {
-            particles.splice(i, 1);
-        }
     }
 } 
